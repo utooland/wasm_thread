@@ -4,16 +4,15 @@ use std::{
     sync::{LockResult, Mutex, MutexGuard, TryLockError},
 };
 
+use js_sys::Reflect;
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, Url, WorkerGlobalScope};
 
 pub fn available_parallelism() -> io::Result<NonZeroUsize> {
-    if let Some(window) = web_sys::window() {
-        return Ok(NonZeroUsize::new(window.navigator().hardware_concurrency() as usize).unwrap());
-    }
-
-    if let Ok(worker) = js_sys::eval("self").unwrap().dyn_into::<WorkerGlobalScope>() {
-        return Ok(NonZeroUsize::new(worker.navigator().hardware_concurrency() as usize).unwrap());
+    if let Ok(navigator) = Reflect::get(&js_sys::global(), &"navigator".into()) {
+        if let Ok(hardware_concurrency) = Reflect::get(&navigator, &"hardwareConcurrency".into()) {
+            return Ok(NonZeroUsize::new(hardware_concurrency.as_f64().unwrap() as usize).unwrap());
+        }
     }
 
     Err(io::Error::new(
@@ -23,7 +22,7 @@ pub fn available_parallelism() -> io::Result<NonZeroUsize> {
 }
 
 pub fn is_web_worker_thread() -> bool {
-    js_sys::eval("self").unwrap().dyn_into::<WorkerGlobalScope>().is_ok()
+    js_sys::global().dyn_into::<WorkerGlobalScope>().is_ok()
 }
 
 /// Extracts path of the `wasm_bindgen` generated .js shim script.

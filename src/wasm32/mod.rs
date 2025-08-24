@@ -57,8 +57,7 @@ impl WorkerMessage {
     pub fn post(self) {
         let req = Box::new(self);
 
-        js_sys::eval("self")
-            .unwrap()
+        js_sys::global()
             .dyn_into::<DedicatedWorkerGlobalScope>()
             .unwrap()
             .post_message(&JsValue::from(Box::into_raw(req) as u32))
@@ -251,7 +250,7 @@ impl Builder {
             func: mem::transmute::<Box<dyn FnOnce() + Send + 'a>, Box<dyn FnOnce() + Send + 'static>>(main),
         };
 
-        if is_web_worker_thread() {
+        if is_web_worker_thread() && !cfg!(feature = "spawn_from_worker") {
             WorkerMessage::SpawnThread(BuilderRequest { builder: self, context }).post();
         } else {
             self.spawn_for_context(context);
