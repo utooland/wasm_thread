@@ -13,7 +13,7 @@ use scoped::ScopeData;
 pub use scoped::{scope, Scope, ScopedJoinHandle};
 use signal::Signal;
 use utils::SpinLockMutex;
-pub use utils::{available_parallelism, get_wasm_bindgen_shim_script_path, get_worker_script, is_web_worker_thread};
+pub use utils::{available_parallelism, get_wasm_bindgen_shim_script_path, get_worker_script, is_main_thread};
 use wasm_bindgen::prelude::*;
 use web_sys::{DedicatedWorkerGlobalScope, Worker, WorkerOptions, WorkerType};
 
@@ -250,7 +250,7 @@ impl Builder {
             func: mem::transmute::<Box<dyn FnOnce() + Send + 'a>, Box<dyn FnOnce() + Send + 'static>>(main),
         };
 
-        if is_web_worker_thread() && !cfg!(feature = "spawn_from_worker") {
+        if !is_main_thread() {
             WorkerMessage::SpawnThread(BuilderRequest { builder: self, context }).post();
         } else {
             self.spawn_for_context(context);

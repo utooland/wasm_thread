@@ -6,7 +6,7 @@ use std::{
 
 use js_sys::Reflect;
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, Url, WorkerGlobalScope};
+use web_sys::{Blob, Url};
 
 pub fn available_parallelism() -> io::Result<NonZeroUsize> {
     if let Ok(navigator) = Reflect::get(&js_sys::global(), &"navigator".into()) {
@@ -21,8 +21,8 @@ pub fn available_parallelism() -> io::Result<NonZeroUsize> {
     ))
 }
 
-pub fn is_web_worker_thread() -> bool {
-    js_sys::global().dyn_into::<WorkerGlobalScope>().is_ok()
+pub fn is_main_thread() -> bool {
+    std::thread::current().id().as_u64().get() == 1_u64
 }
 
 /// Extracts path of the `wasm_bindgen` generated .js shim script.
